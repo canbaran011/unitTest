@@ -1,4 +1,6 @@
 const lib = require('../lib');
+const db = require('../db');
+const mail = require('../mail');
 // jest document should be read...
 // grouping is very important for clean and maintainable code... 
 describe('absolute', () => {
@@ -89,7 +91,51 @@ describe('registerUser', () => {
     });
 });
 
+describe('applyDiscount', () => {
+    it('should apply 10% disc if cust s more than 10 points', () => {
+        // mock function
+        db.getCustomerSync = function(customerId){
+        console.log("fake reading db")
+            return {id : customerId, points :20}
+        }
+        const order = {customerId: 1, totalPrice : 10 }
+        lib.applyDiscount(order);
+        expect(order.totalPrice).toBe(9); 
+    });
+});
 
+describe('notifyCustomer', () => {
+    it('should send an email to the customer ', () => {
+        db.getCustomerSync = function(customerId){
+            return { email: 'a'};
+        }
+        let mailSent = false;
+        mail.send =function(email, message){
+            mailSent = true;
+        }
+        
+        lib.notifyCustomer({ customerId:1 });
+        expect(mailSent).toBe(true);
+    });
+});
 
+// with JEST mock function
+describe('notifyCustomerJest', () => {
+    it('should send an email to the customer ', () => {
 
+        db.getCustomerSync = jest.fn().mockReturnValue(
+            { email : 'a'}
+        );
 
+        mail.send = jest.fn();
+
+        lib.notifyCustomer({ customerId:1 });
+        
+        expect(mail.send).toHaveBeenCalled();
+        expect(mail.send.mock.calls[0][0]).toBe('a');
+        expect(mail.send.mock.calls[0][1]).toMatch(/order/);
+
+    });
+});
+
+ 
